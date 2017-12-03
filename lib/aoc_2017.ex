@@ -4,8 +4,8 @@ defmodule Aoc_2017 do
     task.(input)
   end
 
-  def day1a(inp) do
-    [first|_ ] = input = Integer.digits(inp)
+  def day1a() do
+    [first|_ ] = input = Integer.digits(Inputs.day1)
     {last, sum} = List.foldl(input , {:undef, 0},fn(elem, {elem, sum}) -> {elem, sum+elem}
                                                    (elem, {_, sum})    -> {elem, sum}
                                                 end)
@@ -45,11 +45,7 @@ defmodule Aoc_2017 do
     end
   def day3a() do
     input = Enum.to_list(1..Inputs.day3)
-    {_,_,_,_,_, m} = List.foldl(input, {0, 1, 1, :r, {0, 0}, %{}}, fn(elem, {m, l, t, d, c, map}) when m < l  ->            {m+1, l, t, d, move_cord(d, c), Map.put(map, elem,c)}
-                                                                     (elem, {m, l, t, d, c, map}) when m == l and t < 2 ->  {1, l, t+1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)}
-                                                                     (elem, {m, l, t, d, c, map}) when m == l and t == 2 -> {1, l+1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)}
-                                                                  end)
-    {_, {x,y}} = Map.fetch(m, Inputs.day3)
+    {_, {x,y}} = Map.fetch(create_grid(input), Inputs.day3)
     abs(x)+abs(y)
   end
 
@@ -61,6 +57,13 @@ defmodule Aoc_2017 do
       :d ->   {x, y-1}
     end
   end
+  defp create_grid(input) do
+      {_,_,_,_,_, grid} = List.foldl(input, {0, 1, 1, :r, {0, 0}, %{}},
+        fn(elem, {m, l, t, d, c, map}) when m < l  ->            {m+1, l, t, d, move_cord(d, c), Map.put(map, elem,c)}
+          (elem, {m, l, t, d, c, map}) when m == l and t < 2 ->  {1, l, t+1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)}
+          (elem, {m, l, t, d, c, map}) when m == l and t == 2 -> {1, l+1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)} end)
+      grid
+    end
 
   defp change_dir(dir) do
     case dir do
@@ -72,8 +75,35 @@ defmodule Aoc_2017 do
   end
 
   def day3b() do
+    input = Inputs.day3
+    Enum.reduce_while(Enum.to_list(1..input), {0, 1, 1, :r, {0, 0}, %{}},
+      fn(elem, {m, l, t, d, c, map}) when m < l  ->  v = calculate_value(map,c);
+         cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {m+1, l, t, d, move_cord(d, c), Map.put(map, c, v)}} end
+        (elem, {m, l, t, d, c, map}) when m == l and t < 2 -> v = calculate_value(map,c);
+        cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {1, l, t+1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, c, v)}} end
+        (elem, {m, l, t, d, c, map}) when m == l and t == 2 -> v = calculate_value(map,c);
+         cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {1, l+1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, c, v)}} end
+      end)
+  end
 
+  defp calculate_value(map, {x,y} = c) do
+    sum = Enum.sum(Enum.map([{x+1,y}, {x,y+1}, {x+1, y+1}, {x-1,y}, {x, y-1}, {x-1,y-1}, {x+1, y-1}, {x-1, y+1}], fn c -> fetch_or_skip(map, c) end))
+    cond do
+      sum == 0 -> 1
+      true -> sum
     end
+  end
+
+  defp is_over_input(value, input) do
+    value > input
+  end
+
+ defp fetch_or_skip(map, c) do
+  case Map.fetch(map, c) do
+    {:ok, v} -> v
+    :error -> 0
+  end
+ end
 
 end
 
