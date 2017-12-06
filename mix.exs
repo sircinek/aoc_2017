@@ -4,10 +4,10 @@ defmodule Aoc_2017.Mixfile do
   def project do
     [app: :aoc_2017,
      version: "0.0.1",
-     elixir: "~> 1.1-dev",
+     elixir: "~> 1.5.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps]
+     deps: deps()]
   end
 
   # Configuration for the OTP application

@@ -1,11 +1,23 @@
 defmodule Aoc_2017 do
+  @doc"""
+  # Day 1a unit test
+  iex> Aoc_2017.day1a(1122)
+  3
 
-  def run(task, input) do
-    task.(input)
-  end
+  iex> Aoc_2017.day1a(1111)
+  4
 
-  def day1a() do
-    [first|_ ] = input = Integer.digits(Inputs.day1)
+  iex> Aoc_2017.day1a(1234)
+  0
+
+  iex> Aoc_2017.day1a(91212129)
+  9
+
+  iex> Aoc_2017.day1a()
+  1097
+  """
+  def day1a(inp \\ Inputs.day1) do
+    [first|_ ] = input = Integer.digits(inp)
     {last, sum} = List.foldl(input , {:undef, 0},fn(elem, {elem, sum}) -> {elem, sum+elem}
                                                    (elem, {_, sum})    -> {elem, sum}
                                                 end)
@@ -14,9 +26,28 @@ defmodule Aoc_2017 do
       true -> sum
     end
   end
+  @doc """
+  # Day 1b unit test
+    iex> Aoc_2017.day1b()
+    1188
 
-  def day1b() do
-    input = Integer.digits(Inputs.day1)
+    iex> Aoc_2017.day1b(1212)
+    6
+
+    iex> Aoc_2017.day1b(1221)
+    0
+
+    iex> Aoc_2017.day1b(123425)
+    4
+
+    iex> Aoc_2017.day1b(123123)
+    12
+
+    iex> Aoc_2017.day1b(12131415)
+    4
+  """
+  def day1b(inp \\ Inputs.day1) do
+    input = Integer.digits(inp)
     size = Enum.count(input)
     offset = div(size, 2)
     {_, res} = List.foldl(input, {0, 0}, fn(elem, {index, sum}) when index <= offset-1  ->
@@ -32,20 +63,51 @@ defmodule Aoc_2017 do
                                           end)
     res
   end
-  def day2a() do
-    input = Inputs.day2
+  @doc """
+  # Day2a unit test
+  iex> Aoc_2017.day2a()
+  45158
+
+  iex> Aoc_2017.day2a([[5,1,9,5],[7,5,3],[2,4,6,8]])
+  18
+
+  """
+  def day2a(input \\ Inputs.day2) do
     Enum.sum(Enum.map(input, fn(list) -> Enum.max(list) - Enum.min(list) end))
   end
-  def day2b() do
-    input = Inputs.day2
+  @doc """
+  # Day2b unit test
+  iex> Aoc_2017.day2b()
+  294
+
+  iex> Aoc_2017.day2b([[5,9,2,8],[9,4,7,3],[3,8,6,5]])
+  9
+  """
+  def day2b(input \\ Inputs.day2) do
     Enum.sum(Enum.map(input, fn(list) -> [_|tail] = sort = Enum.sort(list, &(&1 >= &2))
                                          {_, sum} = List.foldl(sort, {tail, 0},
                                            fn(elem, {[_|t] = l, acc}) -> {t, acc+ Enum.sum(for i <- l, rem(elem,i) == 0, do: div(elem,i))}
                                              (_, {[], acc}) -> {0, acc} end); sum end))
     end
-  def day3a() do
-    input = Enum.to_list(1..Inputs.day3)
-    {_, {x,y}} = Map.fetch(create_grid(input), Inputs.day3)
+  @doc """
+  # Day 3a unit test
+  iex> Aoc_2017.day3a()
+  480
+
+  iex> Aoc_2017.day3a(1)
+  0
+
+  iex> Aoc_2017.day3a(12)
+  3
+
+  iex> Aoc_2017.day3a(23)
+  2
+
+  iex> Aoc_2017.day3a(1024)
+  31
+  """
+  def day3a(input \\ Inputs.day3) do
+    {_, {x,y}} = Map.fetch(Enum.to_list(1..input) |> create_grid, input)
     abs(x)+abs(y)
   end
 
@@ -73,20 +135,35 @@ defmodule Aoc_2017 do
       :d -> :r
     end
   end
+  @doc """
+  #Day 3b unit test
+  iex> Aoc_2017.day3b()
+  349975
 
-  def day3b() do
-    input = Inputs.day3
+  iex> Aoc_2017.day3b(27)
+  54
+
+  iex> Aoc_2017.day3b(66)
+  122
+
+  iex> Aoc_2017.day3b(150)
+  304
+
+  iex> Aoc_2017.day3b(380)
+  747
+  """
+  def day3b(input \\ Inputs.day3) do
     Enum.reduce_while(Enum.to_list(1..input), {0, 1, 1, :r, {0, 0}, %{}},
-      fn(elem, {m, l, t, d, c, map}) when m < l  ->  v = calculate_value(map,c);
+      fn(_elem, {m, l, t, d, c, map}) when m < l  ->  v = calculate_value(map,c);
          cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {m+1, l, t, d, move_cord(d, c), Map.put(map, c, v)}} end
-        (elem, {m, l, t, d, c, map}) when m == l and t < 2 -> v = calculate_value(map,c);
+        (_elem, {m, l, t, d, c, map}) when m == l and t < 2 -> v = calculate_value(map,c);
         cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {1, l, t+1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, c, v)}} end
-        (elem, {m, l, t, d, c, map}) when m == l and t == 2 -> v = calculate_value(map,c);
+        (_elem, {m, l, t, d, c, map}) when m == l and t == 2 -> v = calculate_value(map,c);
          cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {1, l+1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, c, v)}} end
       end)
   end
 
-  defp calculate_value(map, {x,y} = c) do
+  defp calculate_value(map, {x,y}) do
     sum = Enum.sum(Enum.map([{x+1,y}, {x,y+1}, {x+1, y+1}, {x-1,y}, {x, y-1}, {x-1,y-1}, {x+1, y-1}, {x-1, y+1}], fn c -> fetch_or_skip(map, c) end))
     cond do
       sum == 0 -> 1
@@ -104,26 +181,76 @@ defmodule Aoc_2017 do
     :error -> 0
   end
  end
- def day4a() do
-   input = String.split(Inputs.day4, "\n")
-   b = Enum.map(input, fn(s) -> String.strip(s) |> String.split(" ") end )
+ @doc """
+  #Day 4a unit test
+  iex> Aoc_2017.day4a()
+  337
+
+  iex> Aoc_2017.day4a("aa bb cc dd ee")
+  1
+
+  iex> Aoc_2017.day4a("aa bb cc dd aa")
+  0
+
+  iex>Aoc_2017.day4a("aa bb cc dd aaa")
+  1
+  """
+ def day4a(input \\ Inputs.day4) do
+   b = String.split(input, "\n")
+       |> Enum.map(fn(s) -> String.trim(s)
+                            |> String.split(" ") end )
    Enum.count(Enum.map(b, fn(b) -> Enum.count(b) ==  Enum.count(Enum.uniq(b)) end), fn(x)-> x == true end)
  end
- def day4b() do
-    input = String.split(Inputs.day4, "\n")
-    b = Enum.map(input, fn(s) -> String.strip(s) |> String.split(" ") end )
-    c = Enum.map(b, fn(e) -> Enum.map(e, fn(x) -> sort_string(x) end) end)
+ @doc """
+  #Day 4b unit test
+  iex> Aoc_2017.day4b()
+  231
+
+  iex> Aoc_2017.day4b("abcde fghij")
+  1
+
+  iex> Aoc_2017.day4b("abcde xyz ecdab")
+  0
+
+  iex> Aoc_2017.day4b("a ab abc adb abf abj")
+  1
+
+  iex> Aoc_2017.day4b("iiii oiii ooii oooi oooo")
+  1
+
+  iex> Aoc_2017.day4b("oiii, ioii, iioi, iiio")
+  0
+  """
+ def day4b(input \\ Inputs.day4) do
+    c = String.split(input, "\n")
+    |> Enum.map(fn(s) -> String.trim(s) |> String.split(" ") end )
+    |> Enum.map(fn(e) -> Enum.map(e, fn(x) -> sort_string(x) end) end)
     Enum.count(Enum.map(c, fn(c) -> Enum.count(c) ==  Enum.count(Enum.uniq(c)) end), fn(x)-> x == true end)
  end
- def day5a() do
-    {length, map} = List.foldl(Inputs.day5, {0, %{}}, fn(value, {index, map}) -> {index+1,Map.put(map, index, value)} end)
+ @doc """
+  #Day 5a unit test
+  iex> Aoc_2017.day5a()
+  373543
+
+  iex> Aoc_2017.day5a([0,3,0,1,-3])
+  5
+  """
+ def day5a(input \\ Inputs.day5) do
+    {_length, map} = List.foldl(input, {0, %{}}, fn(value, {index, map}) -> {index+1,Map.put(map, index, value)} end)
     jump_a(0, 0, map)
  end
- def day5b() do
-    {length, map} = List.foldl(Inputs.day5, {0, %{}}, fn(value, {index, map}) -> {index+1,Map.put(map, index, value)} end)
+ @doc """
+  #Day 5b unit test
+  iex> Aoc_2017.day5b()
+  27502966
+
+  iex> Aoc_2017.day5b([0,3,0,1,-3])
+  10
+  """
+ def day5b(input \\ Inputs.day5) do
+    {_length, map} = List.foldl(input, {0, %{}}, fn(value, {index, map}) -> {index+1,Map.put(map, index, value)} end)
     jump_b(0, 0, map)
   end
-
  def jump_a(index, count, map) do
     case Map.fetch(map, index) do
       {:ok, step}  -> jump_a(index+step, count+1, Map.put(map, index, step+1))
@@ -137,7 +264,57 @@ defmodule Aoc_2017 do
       :error -> count
    end
   end
+  @doc """
+  #Day 6a unit test
+  iex> Aoc_2017.day6a()
+  12841
 
+  iex> Aoc_2017.day6a("0\t2\t7\t0")
+  5
+  """
+  def day6a(input \\ Inputs.day6) do
+  parsed_input = input |> String.split("\t") |> Enum.map(fn x -> String.to_integer(x) end)
+  memory_map = Enum.zip(1..length(parsed_input), parsed_input) |> Enum.into(%{})
+  {_,_, count} = cycle(memory_map, [], 1)
+  count
+  end
+  @doc """
+  # Day 6b unit test
+  iex> Aoc_2017.day6b()
+  8038
+
+  iex> Aoc_2017.day6b("0\t2\t7\t0")
+  4
+  """
+  def day6b(input \\ Inputs.day6) do
+    parsed_input = input |> String.split("\t") |> Enum.map(fn x -> String.to_integer(x) end)
+    memory_map = Enum.zip(1..length(parsed_input), parsed_input) |> Enum.into(%{})
+    {m, l, _} = cycle(memory_map, [], 1)
+    i = Enum.find_index(l, fn elem -> elem == m end)
+    i+1
+  end
+
+ def max_value(map) do Enum.reduce(map, {0, 0}, fn {_i,v} = x, {_i_a, v_a} = acc -> if v > v_a do; x; else acc end end) end
+
+ def cycle(map, map_list, cycle_count) do
+    {index, value} = max_value(map)
+    new_map = update_map(map, index, value)
+    if Enum.member?(map_list, new_map) do
+      {new_map, map_list, cycle_count}
+    else
+      cycle(new_map, [new_map|map_list], cycle_count+1)
+    end
+  end
+
+ def update_map(map, index, value) do
+    size = Map.size(map)
+    new_map = Map.put(map, index, 0)
+    {_, res} = Enum.reduce(1..value, {index+1, new_map}, fn(_it, {ind, m}) when ind < size -> {_,next_m} = Map.get_and_update(m, ind, fn x -> {x,x+1} end); {ind+1, next_m}
+                                                           (_it, {ind, m}) when ind == size -> {_,next_m} = Map.get_and_update(m, ind, fn x -> {x,x+1} end); {1, next_m}
+                                                           (_it, {ind, m}) when ind > size -> {_,next_m} = Map.get_and_update(m, 1, fn x -> {x,x+1} end); {2, next_m} end)
+
+    res
+  end
  def sort_string(string) do
     string
     |> String.downcase()
@@ -673,4 +850,5 @@ defmodule Inputs do
   def day5() do
     [1, 2 ,-1 ,-2 ,1 ,-3 ,-1 ,1 ,0 ,-4 ,-8 ,-7 ,-2 ,0 ,-2 ,-11 ,1 ,-2 ,0 ,0 ,-11 ,-17 ,-18 ,-1 ,-12 ,-21 ,-15 ,-24 ,-8 ,-5 ,0 ,-17 ,-8 ,-5 ,-24 ,-16 ,-16 ,-21 ,-5 ,-7 ,-13 ,-11 ,-2 ,-27 ,-29 ,-38 ,-2 ,2 ,-27 ,-10 ,-9 ,-32 ,-3 ,-1 ,-6 ,-50 ,-21 ,-47 ,-47 ,-16 ,-48 ,-19 ,-53 ,-25 ,-57 ,-42 ,-64 ,-21 ,-59 ,-3 ,-51 ,-66 ,-44 ,-42 ,-45 ,-6 ,-18 ,-28 ,-18 ,-48 ,-21 ,-15 ,-4 ,-10 ,-49 ,-72 ,-56 ,-47 ,-41 ,-74 ,-38 ,-60 ,-28 ,-10 ,-32 ,-1 ,-9 ,-40 ,-10 ,-6 ,-58 ,-92 ,-8 ,-94 ,-99 ,-93 ,-33 ,-31 ,-84 ,-28 ,-39 ,-105 ,-23 ,-76 ,-35 ,-71 ,-100 ,-102 ,-29 ,-86 ,-70 ,-30 ,-8 ,0 ,-109 ,1 ,-22 ,-24 ,-92 ,-21 ,-103 ,-127 ,-67 ,0 ,-68 ,-31 ,-71 ,-111 ,-26 ,-123 ,-39 ,-116 ,-15 ,-86 ,-85 ,-137 ,-127 ,-134 ,-145 ,-29 ,-123 ,-19 ,-43 ,-152 ,-122 ,-148 ,-129 ,-97 ,-39 ,-28 ,-49 ,-93 ,-110 ,-103 ,-130 ,1 ,-114 ,-146 ,-99 ,-128 ,-118 ,-32 ,-48 ,-115 ,-155 ,-26 ,-37 ,-65 ,-48 ,-71 ,-6 ,-137 ,-178 ,-111 ,-139 ,-127 ,-160 ,-172 ,-98 ,-38 ,-156 ,-11 ,-62 ,-187 ,-53 ,2 ,-117 ,-3 ,-31 ,-143 ,-41 ,-47 ,-169 ,-162 ,-158 ,-12 ,-69 ,-114 ,-180 ,-155 ,-125 ,-64 ,-176 ,-184 ,-202 ,-116 ,-74 ,-98 ,-205 ,-84 ,-152 ,-54 ,-102 ,-165 ,-138 ,-140 ,-180 ,-96 ,-98 ,-109 ,-81 ,-199 ,-137 ,-56 ,-74 ,-179 ,-175 ,-114 ,-124 ,-15 ,-234 ,-219 ,-51 ,-41 ,-144 ,-134 ,-161 ,-59 ,-128 ,-71 ,-22 ,-165 ,-222 ,-70 ,-65 ,-51 ,-43 ,-86 ,-198 ,-238 ,-119 ,-31 ,-195 ,-87 ,-102 ,-30 ,-73 ,-76 ,-153 ,-238 ,-8 ,-73 ,-63 ,-148 ,-42 ,-16 ,-228 ,-243 ,-235 ,-160 ,-107 ,-235 ,-29 ,-188 ,-202 ,-42 ,-215 ,-159 ,-134 ,-172 ,-263 ,-188 ,-124 ,-34 ,-206 ,-15 ,-138 ,-184 ,-20 ,-32 ,-271 ,-103 ,-203 ,-129 ,-177 ,-69 ,-107 ,-265 ,-68 ,-299 ,-161 ,-148 ,-182 ,0 ,-207 ,-106 ,-68 ,-92 ,-53 ,-52 ,-288 ,-3 ,-211 ,-143 ,-204 ,-126 ,-152 ,-106 ,-232 ,-153 ,-234 ,-62 ,-124 ,-131 ,-42 ,-297 ,-332 ,-188 ,-115 ,-100 ,-173 ,-52 ,-115 ,-296 ,-301 ,-312 ,-292 ,-2 ,-321 ,-178 ,-174 ,-244 ,-309 ,-161 ,-346 ,-251 ,-157 ,-325 ,-292 ,-159 ,-95 ,0 ,-124 ,-69 ,-324 ,-223 ,-89 ,-359 ,-242 ,-239 ,1 ,-39 ,-204 ,-287 ,-142 ,-123 ,-363 ,-218 ,-197 ,-136 ,-20 ,-304 ,-281 ,-83 ,-7 ,-129 ,-315 ,-76 ,-349 ,-141 ,-318 ,-369 ,-346 ,-161 ,-141 ,-110 ,-279 ,-5 ,-86 ,-348 ,-59 ,-255 ,-266 ,-355 ,-110 ,-14 ,-339 ,-109 ,-44 ,-38 ,-10 ,-164 ,-214 ,-265 ,-412 ,-72 ,-413 ,-271 ,-343 ,-124 ,-352 ,-304 ,-124 ,-381 ,-258 ,-8 ,-235 ,-288 ,-27 ,-296 ,-179 ,-392 ,-336 ,-255 ,-114 ,-15 ,-407 ,-296 ,-29 ,-352 ,-419 ,-190 ,-308 ,-2 ,-430 ,-157 ,-379 ,-220 ,-179 ,-77 ,-337 ,-61 ,-48 ,-64 ,-197 ,-408 ,-284 ,-84 ,-409 ,-243 ,-316 ,-77 ,-77 ,-428 ,-432 ,-182 ,-437 ,-254 ,-50 ,-260 ,-301 ,-28 ,-33 ,-335 ,-348 ,-240 ,-287 ,-436 ,-225 ,-221 ,-198 ,-190 ,-50 ,-87 ,-161 ,-408 ,0 ,-14 ,-225 ,-105 ,-188 ,-290 ,-349 ,-57 ,-45 ,-20 ,-384 ,-36 ,-264 ,-359 ,-52 ,-21 ,-328 ,-194 ,-432 ,-113 ,-475 ,-391 ,-86 ,-407 ,-18 ,-435 ,-206 ,-317 ,-254 ,-369 ,-373 ,-127 ,-405 ,-309 ,-154 ,-480 ,-271 ,-71 ,-306 ,-381 ,-252 ,-253 ,-420 ,-40 ,-349 ,-403 ,-44 ,-256 ,-33 ,-429 ,-10 ,-461 ,-405 ,-216 ,-329 ,-201 ,-498 ,-392 ,-149 ,-419 ,-85 ,-408 ,-248 ,-88 ,-322 ,-438 ,-381 ,-100 ,-445 ,-412 ,-215 ,-220 ,-83 ,-436 ,-411 ,-555 ,-372 ,-232 ,-309 ,-151 ,-214 ,-219 ,-268 ,-123 ,-90 ,-241 ,-508 ,-134 ,-74 ,-296 ,-505 ,-240 ,-161 ,-477 ,-63 ,-118 ,-293 ,-69 ,-197 ,-88 ,-520 ,-170 ,-37 ,-114 ,-234 ,-36 ,-225 ,-116 ,-36 ,-195 ,-363 ,-75 ,-137 ,-7 ,-506 ,-124 ,-556 ,-15 ,-327 ,-74 ,-367 ,-505 ,-29 ,-296 ,-281 ,-180 ,-420 ,-119 ,-449 ,-502 ,-204 ,-294 ,-484 ,-515 ,-74 ,-337 ,-256 ,-479 ,-471 ,-27 ,-614 ,-354 ,-369 ,-607 ,-244 ,-578 ,-195 ,-215 ,-407 ,-552 ,-247 ,-514 ,-434 ,-291 ,-521 ,-99 ,-598 ,-292 ,-400 ,-594 ,-381 ,-602 ,-260 ,-79 ,-441 ,-444 ,-146 ,-451 ,-502 ,-215 ,-81 ,-577 ,-652 ,-507 ,-264 ,-588 ,-431 ,-401 ,-103 ,-282 ,-125 ,-259 ,-615 ,-321 ,-271 ,-84 ,-84 ,-323 ,-650 ,-79 ,-289 ,-522 ,-129 ,-343 ,-441 ,-186 ,-561 ,-244 ,-186 ,-296 ,-272 ,-258 ,-308 ,-390 ,-677 ,-367 ,-186 ,-604 ,-104 ,-481 ,-394 ,-31 ,-663 ,-493 ,-608 ,-142 ,-86 ,-356 ,-581 ,-131 ,-11 ,-92 ,-258 ,-552 ,-176 ,-244 ,-208 ,-564 ,-9 ,-558 ,-256 ,-439 ,-460 ,-641 ,-457 ,-715 ,-328 ,-291 ,-172 ,-380 ,-406 ,0 ,-123 ,-286 ,-301 ,-375 ,-358 ,-607 ,-599 ,-670 ,-94 ,-143 ,-65 ,-201 ,-486 ,-394 ,-405 ,-671 ,-673 ,-564 ,-137 ,-200 ,-148 ,-644 ,-589 ,-643 ,-155 ,-714 ,-602 ,-54 ,-746 ,-403 ,-520 ,-446 ,-646 ,-680 ,-474 ,-431 ,-762 ,-712 ,-554 ,-187 ,-242 ,-242 ,-595 ,-66 ,-610 ,-378 ,-430 ,-595 ,-485 ,-467 ,-434 ,-663 ,-375 ,-81 ,-503 ,-688 ,-651 ,-17 ,-10 ,-184 ,-361 ,-165 ,-785 ,-61 ,-211 ,-140 ,-740 ,-126 ,-549 ,-222 ,-611 ,-557 ,-786 ,-525 ,-431 ,-111 ,-287 ,-131 ,-574 ,-212 ,-733 ,-223 ,-734 ,-275 ,-524 ,-295 ,-541 ,-240 ,-162 ,-750 ,-350 ,-486 ,-672 ,-579 ,-410 ,-737 ,-544 ,-728 ,-516 ,-163 ,-227 ,-249 ,-177 ,-522 ,-363 ,-190 ,-613 ,-148 ,-810 ,-593 ,-702 ,-545 ,-187 ,-27 ,-332 ,-611 ,-510 ,-214 ,-56 ,-219 ,-696 ,-593 ,-720 ,-479 ,-155 ,-278 ,-517 ,-691 ,-314 ,-638 ,-748 ,-232 ,-737 ,-46 ,-138 ,-192 ,-631 ,-224 ,-691 ,-628 ,-613 ,-324 ,-185 ,-365 ,-259 ,-219 ,-462 ,-290 ,-783 ,-710 ,-444 ,-271 ,-117 ,-469 ,-609 ,-105 ,-602 ,-465 ,-260 ,-323 ,-544 ,-493 ,-458 ,-261 ,-102 ,-198 ,-221 ,-321 ,-694 ,-614 ,-147 ,-511 ,-592 ,-335 ,-738 ,-198 ,-274 ,-780 ,-598 ,-281 ,-686 ,-25 ,-682 ,-827 ,-491 ,-312 ,-540 ,-304 ,-293 ,2 ,-238 ,-614 ,-22 ,-380 ,-194 ,-167 ,-167 ,-569 ,-170 ,-184 ,-104 ,-327 ,-401 ,-654 ,-926 ,-571 ,-181 ,-809 ,-552 ,-767 ,-579 ,-823 ,-620 ,-660 ,-853 ,-448 ,-720 ,-872 ,-898 ,-45 ,-154 ,-409 ,-399 ,-950 ,-393 ,-782 ,-376 ,-65 ,-644 ,-654 ,-523 ,-24 ,-767 ,-419 ,-183 ,-143 ,-98 ,-792 ,-485 ,-923 ,-360 ,-173 ,-879 ,-847 ,-732 ,-962 ,-643 ,-392 ,-117 ,-4 ,-932 ,-253 ,-298 ,-381 ,-339 ,-796 ,-274 ,-79 ,-586 ,-567 ,-425 ,-541 ,-329 ,-800 ,-878 ,-519 ,-111 ,-224 ,-304 ,-560 ,-183 ,-604 ,-952 ,-229 ,2 ,-115 ,-748 ,-262 ,-54 ,-533 ,-139 ,-785 ,-583 ,-634 ,-164 ,-836 ,-77 ,-578 ,-593 ,-561 ,-596 ,-611 ,-440 ,-27 ,-848 ,-998 ,-56 ,-947 ,-740 ,-737 ,-612 ,-655 ,-845 ,-812 ,-925 ,-197 ,-236 ,-37 ,-753 ,-747 ,-286 ,-641 ,-43 ,-348 ,-33 ,-713 ,-610 ,-777 ,-899 ,-1005 ,-264 ,-193 ,-928 ,-193 ,-412 ,-213 ,-228 ,-1012 ,-920 ,-702 ,-420 ,-496 ,-1019 ,-386 ,-645 ,-804 ,-795 ,-12 ,-810 ,-117 ,-454 ,-266 ,-1059 ,-321 ,-674 ,-647]
   end
+  def day6() do "4	10	4	1	8	4	9	14	5	1	14	15	0	15	3	5" end
 end
