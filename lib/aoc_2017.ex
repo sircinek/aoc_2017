@@ -17,10 +17,15 @@ defmodule Aoc_2017 do
   1097
   """
   def day1a(inp \\ Inputs.day1) do
-    [first|_ ] = input = Integer.digits(inp)
-    {last, sum} = List.foldl(input , {:undef, 0},fn(elem, {elem, sum}) -> {elem, sum+elem}
-                                                   (elem, {_, sum})    -> {elem, sum}
-                                                end)
+    [first | _] = input = Integer.digits(inp)
+    {last, sum} = List.foldl(
+      input,
+      {:undef, 0},
+      fn
+        (elem, {elem, sum}) -> {elem, sum + elem}
+        (elem, {_, sum}) -> {elem, sum}
+      end
+    )
     cond do
       first == last -> sum + last
       true -> sum
@@ -50,17 +55,22 @@ defmodule Aoc_2017 do
     input = Integer.digits(inp)
     size = Enum.count(input)
     offset = div(size, 2)
-    {_, res} = List.foldl(input, {0, 0}, fn(elem, {index, sum}) when index <= offset-1  ->
-                                                           cond do
-                                                                 Enum.at(input, index+offset) == elem -> {index+1, sum+elem}
-                                                                 true -> {index+1, sum}
-                                                              end
-                                           (elem, {index, sum}) ->
-                                                             cond  do
-                                                                 Enum.at(input, index+offset-size) ==  elem -> {index+1, sum+elem}
-                                                                 true -> {index+1, sum}
-                                                              end
-                                          end)
+    {_, res} = List.foldl(
+      input,
+      {0, 0},
+      fn
+        (elem, {index, sum}) when index <= offset - 1 ->
+          cond do
+            Enum.at(input, index + offset) == elem -> {index + 1, sum + elem}
+            true -> {index + 1, sum}
+          end
+        (elem, {index, sum}) ->
+          cond  do
+            Enum.at(input, index + offset - size) == elem -> {index + 1, sum + elem}
+            true -> {index + 1, sum}
+          end
+      end
+    )
     res
   end
   @doc """
@@ -73,7 +83,7 @@ defmodule Aoc_2017 do
 
   """
   def day2a(input \\ Inputs.day2) do
-    Enum.sum(Enum.map(input, fn(list) -> Enum.max(list) - Enum.min(list) end))
+    Enum.sum(Enum.map(input, fn (list) -> Enum.max(list) - Enum.min(list) end))
   end
   @doc """
   # Day2b unit test
@@ -84,11 +94,24 @@ defmodule Aoc_2017 do
   9
   """
   def day2b(input \\ Inputs.day2) do
-    Enum.sum(Enum.map(input, fn(list) -> [_|tail] = sort = Enum.sort(list, &(&1 >= &2))
-                                         {_, sum} = List.foldl(sort, {tail, 0},
-                                           fn(elem, {[_|t] = l, acc}) -> {t, acc+ Enum.sum(for i <- l, rem(elem,i) == 0, do: div(elem,i))}
-                                             (_, {[], acc}) -> {0, acc} end); sum end))
-    end
+    Enum.sum(
+      Enum.map(
+        input,
+        fn (list) -> [_ | tail] = sort = Enum.sort(list, &(&1 >= &2))
+                     {_, sum} = List.foldl(
+                       sort,
+                       {tail, 0},
+                       fn
+                         (elem, {[_ | t] = l, acc}) ->
+                           {t, acc + Enum.sum(for i <- l, rem(elem, i) == 0, do: div(elem, i))}
+                         (_, {[], acc}) ->
+                           {0, acc}
+                       end
+                     ); sum
+        end
+      )
+    )
+  end
   @doc """
   # Day 3a unit test
   iex> Aoc_2017.day3a()
@@ -107,25 +130,37 @@ defmodule Aoc_2017 do
   31
   """
   def day3a(input \\ Inputs.day3) do
-    {_, {x,y}} = Map.fetch(Enum.to_list(1..input) |> create_grid, input)
-    abs(x)+abs(y)
+    {_, {x, y}} = Map.fetch(
+      Enum.to_list(1..input)
+      |> create_grid,
+      input
+    )
+    abs(x) + abs(y)
   end
 
   defp move_cord(dir, {x, y}) do
     case dir do
-      :r ->   {x+1, y}
-      :l ->   {x-1, y}
-      :u ->   {x, y+1}
-      :d ->   {x, y-1}
+      :r -> {x + 1, y}
+      :l -> {x - 1, y}
+      :u -> {x, y + 1}
+      :d -> {x, y - 1}
     end
   end
   defp create_grid(input) do
-      {_,_,_,_,_, grid} = List.foldl(input, {0, 1, 1, :r, {0, 0}, %{}},
-        fn(elem, {m, l, t, d, c, map}) when m < l  ->            {m+1, l, t, d, move_cord(d, c), Map.put(map, elem,c)}
-          (elem, {m, l, t, d, c, map}) when m == l and t < 2 ->  {1, l, t+1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)}
-          (elem, {m, l, t, d, c, map}) when m == l and t == 2 -> {1, l+1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)} end)
-      grid
-    end
+    {_, _, _, _, _, grid} = List.foldl(
+      input,
+      {0, 1, 1, :r, {0, 0}, %{}},
+      fn
+        (elem, {m, l, t, d, c, map}) when m < l ->
+          {m + 1, l, t, d, move_cord(d, c), Map.put(map, elem, c)}
+        (elem, {m, l, t, d, c, map}) when m == l and t < 2 ->
+          {1, l, t + 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)}
+        (elem, {m, l, t, d, c, map}) when m == l and t == 2 ->
+          {1, l + 1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, elem, c)}
+      end
+    )
+    grid
+  end
 
   defp change_dir(dir) do
     case dir do
@@ -153,18 +188,69 @@ defmodule Aoc_2017 do
   747
   """
   def day3b(input \\ Inputs.day3) do
-    Enum.reduce_while(Enum.to_list(1..input), {0, 1, 1, :r, {0, 0}, %{}},
-      fn(_elem, {m, l, t, d, c, map}) when m < l  ->  v = calculate_value(map,c);
-         cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {m+1, l, t, d, move_cord(d, c), Map.put(map, c, v)}} end
-        (_elem, {m, l, t, d, c, map}) when m == l and t < 2 -> v = calculate_value(map,c);
-        cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {1, l, t+1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, c, v)}} end
-        (_elem, {m, l, t, d, c, map}) when m == l and t == 2 -> v = calculate_value(map,c);
-         cond do is_over_input(v, input) -> {:halt, v}; true ->  {:cont, {1, l+1, 1, change_dir(d), move_cord(change_dir(d), c), Map.put(map, c, v)}} end
-      end)
+    Enum.reduce_while(
+      Enum.to_list(1..input),
+      {0, 1, 1, :r, {0, 0}, %{}},
+      fn
+        (_elem, {m, l, t, d, c, map}) when m < l -> v = calculate_value(map, c);
+                                                    cond do
+                                                      is_over_input(v, input) ->
+{:halt, v};
+                                                      true ->
+                                                        {:cont, {m + 1, l, t, d, move_cord(d, c), Map.put(map, c, v)}}
+                                                    end
+        (_elem, {m, l, t, d, c, map}) when m == l and t < 2 -> v = calculate_value(map, c);
+                                                               cond do
+                                                                 is_over_input(v, input) ->
+{:halt, v};
+                                                                 true ->
+                                                                   {
+                                                                     :cont,
+                                                                     {
+                                                                       1,
+                                                                       l,
+                                                                       t + 1,
+                                                                       change_dir(d),
+                                                                       move_cord(change_dir(d), c),
+                                                                       Map.put(map, c, v)
+                                                                     }
+                                                                   } end
+        (_elem, {m, l, t, d, c, map}) when m == l and t == 2 -> v = calculate_value(map, c);
+                                                                cond do
+                                                                  is_over_input(v, input) ->
+{:halt, v};
+                                                                  true ->
+                                                                    {
+                                                                      :cont,
+                                                                      {
+                                                                        1,
+                                                                        l + 1,
+                                                                        1,
+                                                                        change_dir(d),
+                                                                        move_cord(change_dir(d), c),
+                                                                        Map.put(map, c, v)
+                                                                      }
+                                                                    } end
+      end
+    )
   end
 
-  defp calculate_value(map, {x,y}) do
-    sum = Enum.sum(Enum.map([{x+1,y}, {x,y+1}, {x+1, y+1}, {x-1,y}, {x, y-1}, {x-1,y-1}, {x+1, y-1}, {x-1, y+1}], fn c -> fetch_or_skip(map, c) end))
+  defp calculate_value(map, {x, y}) do
+    sum = Enum.sum(
+      Enum.map(
+        [
+          {x + 1, y},
+          {x, y + 1},
+          {x + 1, y + 1},
+          {x - 1, y},
+          {x, y - 1},
+          {x - 1, y - 1},
+          {x + 1, y - 1},
+          {x - 1, y + 1}
+        ],
+        fn c -> fetch_or_skip(map, c) end
+      )
+    )
     cond do
       sum == 0 -> 1
       true -> sum
@@ -175,13 +261,13 @@ defmodule Aoc_2017 do
     value > input
   end
 
- defp fetch_or_skip(map, c) do
-  case Map.fetch(map, c) do
-    {:ok, v} -> v
-    :error -> 0
+  defp fetch_or_skip(map, c) do
+    case Map.fetch(map, c) do
+      {:ok, v} -> v
+      :error -> 0
+    end
   end
- end
- @doc """
+  @doc """
   #Day 4a unit test
   iex> Aoc_2017.day4a()
   337
@@ -195,13 +281,16 @@ defmodule Aoc_2017 do
   iex>Aoc_2017.day4a("aa bb cc dd aaa")
   1
   """
- def day4a(input \\ Inputs.day4) do
-   b = String.split(input, "\n")
-       |> Enum.map(fn(s) -> String.trim(s)
-                            |> String.split(" ") end )
-   Enum.count(Enum.map(b, fn(b) -> Enum.count(b) ==  Enum.count(Enum.uniq(b)) end), fn(x)-> x == true end)
- end
- @doc """
+  def day4a(input \\ Inputs.day4) do
+    b = String.split(input, "\n")
+        |> Enum.map(
+             fn (s) -> String.trim(s)
+                       |> String.split(" ")
+             end
+           )
+    Enum.count(Enum.map(b, fn (b) -> Enum.count(b) == Enum.count(Enum.uniq(b)) end), fn (x) -> x == true end)
+  end
+  @doc """
   #Day 4b unit test
   iex> Aoc_2017.day4b()
   231
@@ -221,13 +310,17 @@ defmodule Aoc_2017 do
   iex> Aoc_2017.day4b("oiii, ioii, iioi, iiio")
   0
   """
- def day4b(input \\ Inputs.day4) do
+  def day4b(input \\ Inputs.day4) do
     c = String.split(input, "\n")
-    |> Enum.map(fn(s) -> String.trim(s) |> String.split(" ") end )
-    |> Enum.map(fn(e) -> Enum.map(e, fn(x) -> sort_string(x) end) end)
-    Enum.count(Enum.map(c, fn(c) -> Enum.count(c) ==  Enum.count(Enum.uniq(c)) end), fn(x)-> x == true end)
- end
- @doc """
+        |> Enum.map(
+             fn (s) ->
+               String.trim(s)
+               |> String.split(" ") end
+           )
+        |> Enum.map(fn (e) -> Enum.map(e, fn (x) -> sort_string(x) end) end)
+    Enum.count(Enum.map(c, fn (c) -> Enum.count(c) == Enum.count(Enum.uniq(c)) end), fn (x) -> x == true end)
+  end
+  @doc """
   #Day 5a unit test
   iex> Aoc_2017.day5a()
   373543
@@ -235,11 +328,15 @@ defmodule Aoc_2017 do
   iex> Aoc_2017.day5a([0,3,0,1,-3])
   5
   """
- def day5a(input \\ Inputs.day5) do
-    {_length, map} = List.foldl(input, {0, %{}}, fn(value, {index, map}) -> {index+1,Map.put(map, index, value)} end)
+  def day5a(input \\ Inputs.day5) do
+    {_length, map} = List.foldl(
+      input,
+      {0, %{}},
+      fn (value, {index, map}) -> {index + 1, Map.put(map, index, value)} end
+    )
     jump_a(0, 0, map)
- end
- @doc """
+  end
+  @doc """
   #Day 5b unit test
   iex> Aoc_2017.day5b()
   27502966
@@ -247,22 +344,26 @@ defmodule Aoc_2017 do
   iex> Aoc_2017.day5b([0,3,0,1,-3])
   10
   """
- def day5b(input \\ Inputs.day5) do
-    {_length, map} = List.foldl(input, {0, %{}}, fn(value, {index, map}) -> {index+1,Map.put(map, index, value)} end)
+  def day5b(input \\ Inputs.day5) do
+    {_length, map} = List.foldl(
+      input,
+      {0, %{}},
+      fn (value, {index, map}) -> {index + 1, Map.put(map, index, value)} end
+    )
     jump_b(0, 0, map)
   end
- def jump_a(index, count, map) do
+  def jump_a(index, count, map) do
     case Map.fetch(map, index) do
-      {:ok, step}  -> jump_a(index+step, count+1, Map.put(map, index, step+1))
+      {:ok, step} -> jump_a(index + step, count + 1, Map.put(map, index, step + 1))
       :error -> count
     end
- end
- def jump_b(index, count, map) do
-   case Map.fetch(map, index) do
-      {:ok, step} when step >= 3 -> jump_b(index+step, count+1, Map.put(map, index,step-1))
-      {:ok, step} -> jump_b(index+step, count+1, Map.put(map, index, step+1))
+  end
+  def jump_b(index, count, map) do
+    case Map.fetch(map, index) do
+      {:ok, step} when step >= 3 -> jump_b(index + step, count + 1, Map.put(map, index, step - 1))
+      {:ok, step} -> jump_b(index + step, count + 1, Map.put(map, index, step + 1))
       :error -> count
-   end
+    end
   end
   @doc """
   #Day 6a unit test
@@ -273,10 +374,13 @@ defmodule Aoc_2017 do
   5
   """
   def day6a(input \\ Inputs.day6) do
-  parsed_input = input |> String.split("\t") |> Enum.map(fn x -> String.to_integer(x) end)
-  memory_map = Enum.zip(1..length(parsed_input), parsed_input) |> Enum.into(%{})
-  {_,_, count} = cycle(memory_map, [], 1)
-  count
+    parsed_input = input
+                   |> String.split("\t")
+                   |> Enum.map(fn x -> String.to_integer(x) end)
+    memory_map = Enum.zip(1..length(parsed_input), parsed_input)
+                 |> Enum.into(%{})
+    {_, _, count} = cycle(memory_map, [], 1)
+    count
   end
   @doc """
   # Day 6b unit test
@@ -287,40 +391,65 @@ defmodule Aoc_2017 do
   4
   """
   def day6b(input \\ Inputs.day6) do
-    parsed_input = input |> String.split("\t") |> Enum.map(fn x -> String.to_integer(x) end)
-    memory_map = Enum.zip(1..length(parsed_input), parsed_input) |> Enum.into(%{})
+    parsed_input = input
+                   |> String.split("\t")
+                   |> Enum.map(fn x -> String.to_integer(x) end)
+    memory_map = Enum.zip(1..length(parsed_input), parsed_input)
+                 |> Enum.into(%{})
     {m, l, _} = cycle(memory_map, [], 1)
     i = Enum.find_index(l, fn elem -> elem == m end)
-    i+1
+    i + 1
   end
 
- def max_value(map) do Enum.reduce(map, {0, 0}, fn {_i,v} = x, {_i_a, v_a} = acc -> if v > v_a do; x; else acc end end) end
+  def max_value(map) do
+    Enum.reduce(
+      map,
+      {0, 0},
+      fn {_i, v} = x, {_i_a, v_a} = acc ->
+        if v > v_a do;
+          x;
+        else
+          acc
+        end end
+    ) end
 
- def cycle(map, map_list, cycle_count) do
+  def cycle(map, map_list, cycle_count) do
     {index, value} = max_value(map)
     new_map = update_map(map, index, value)
     if Enum.member?(map_list, new_map) do
       {new_map, map_list, cycle_count}
     else
-      cycle(new_map, [new_map|map_list], cycle_count+1)
+      cycle(new_map, [new_map | map_list], cycle_count + 1)
     end
   end
 
- def update_map(map, index, value) do
+  def update_map(map, index, value) do
     size = Map.size(map)
     new_map = Map.put(map, index, 0)
-    {_, res} = Enum.reduce(1..value, {index+1, new_map}, fn(_it, {ind, m}) when ind < size -> {_,next_m} = Map.get_and_update(m, ind, fn x -> {x,x+1} end); {ind+1, next_m}
-                                                           (_it, {ind, m}) when ind == size -> {_,next_m} = Map.get_and_update(m, ind, fn x -> {x,x+1} end); {1, next_m}
-                                                           (_it, {ind, m}) when ind > size -> {_,next_m} = Map.get_and_update(m, 1, fn x -> {x,x+1} end); {2, next_m} end)
+    {_, res} = Enum.reduce(
+      1..value,
+      {index + 1, new_map},
+      fn
+        (_it, {ind, m}) when ind < size ->
+          {_, next_m} = Map.get_and_update(m, ind, fn x -> {x, x + 1} end);
+          {ind + 1, next_m}
+        (_it, {ind, m}) when ind == size ->
+          {_, next_m} = Map.get_and_update(m, ind, fn x -> {x, x + 1} end);
+          {1, next_m}
+        (_it, {ind, m}) when ind > size ->
+          {_, next_m} = Map.get_and_update(m, 1, fn x -> {x, x + 1} end);
+          {2, next_m}
+      end
+    )
 
     res
   end
- def sort_string(string) do
+  def sort_string(string) do
     string
     |> String.downcase()
     |> String.graphemes()
     |> Enum.sort()
- end
+  end
 end
 
 defmodule Inputs do
@@ -328,13 +457,30 @@ defmodule Inputs do
     818275977931166178424892653779931342156567268946849597948944469863818248114327524824136924486891794739281668741616818614613222585132742386168687517939432911753846817997473555693821316918473474459788714917665794336753628836231159578734813485687247273288926216976992516314415836985611354682821892793983922755395577592859959966574329787693934242233159947846757279523939217844194346599494858459582798326799512571365294673978955928416955127211624234143497546729348687844317864243859238665326784414349618985832259224761857371389133635711819476969854584123589566163491796442167815899539788237118339218699137497532932492226948892362554937381497389469981346971998271644362944839883953967698665427314592438958181697639594631142991156327257413186621923369632466918836951277519421695264986942261781256412377711245825379412978876134267384793694756732246799739464721215446477972737883445615664755923441441781128933369585655925615257548499628878242122434979197969569971961379367756499884537433839217835728263798431874654317137955175565253555735968376115749641527957935691487965161211853476747758982854811367422656321836839326818976668191525884763294465366151349347633968321457954152621175837754723675485348339261288195865348545793575843874731785852718281311481217515834822185477982342271937155479432673815629144664144538221768992733498856934255518875381672342521819499939835919827166318715849161715775427981485233467222586764392783699273452228728667175488552924399518855743923659815483988899924199449721321589476864161778841352853573584489497263216627369841455165476954483715112127465311353411346132671561568444626828453687183385215975319858714144975174516356117245993696521941589168394574287785233685284294357548156487538175462176268162852746996633977948755296869616778577327951858348313582783675149343562362974553976147259225311183729415381527435926224781181987111454447371894645359797229493458443522549386769845742557644349554641538488252581267341635761715674381775778868374988451463624332123361576518411234438681171864923916896987836734129295354684962897616358722633724198278552339794629939574841672355699222747886785616814449297817352118452284785694551841431869545321438468118
   end
   def day2() do
-    [[86	,440	,233	,83	,393	,420	,228	,491	,159	,13	,110	,135	,97	,238	,92	,396], [646	,3952	,3430	,145	,1574	,2722	,3565	,125	,3303	,843	,152	,1095	,3805	,134	,3873	,3024] , [2150	,257	,237	,2155	,1115	,150	,502	,255	,1531	,894	,2309	,1982	,2418	,206	,307	,2370] , [1224	,343	,1039	,126	,1221	,937	,136	,1185	,1194	,1312	,1217	,929	,124	,1394	,1337	,168] , [1695	,2288	,224	,2667	,2483	,3528	,809	,263	,2364	,514	,3457	,3180	,2916	,239	,212	,3017] , [827	,3521	,127	,92	,2328	,3315	,1179	,3240	,695	,3144	,3139	,533	,132	,82	,108	,854] , [1522	,2136	,1252	,1049	,207	,2821	,2484	,413	,2166	,1779	,162	,2154	,158	,2811	,164	,2632] , [95	,579	,1586	,1700	,79	,1745	,1105	,89	,1896	,798	,1511	,1308	,1674	,701	,60	,2066] , [1210	,325	,98	,56	,1486	,1668	,64	,1601	,1934	,1384	,69	,1725	,992	,619	,84	,167] , [4620	,2358	,2195	,4312	,168	,1606	,4050	,102	,2502	,138	,135	,4175	,1477	,2277	,2226	,1286] , [ 5912	,6261	,3393	,431	,6285	,3636	,4836	,180	,6158	,6270	,209	,3662	,5545	,204	,6131	,230] , [ 170	,2056	,2123	,2220	,2275	,139	,461	,810	,1429	,124	,1470	,2085	,141	,1533	,1831	,518] , [ 193	,281	,2976	,3009	,626	,152	,1750	,1185	,3332	,715	,1861	,186	,1768	,3396	,201	,3225] , [ 492	,1179	,154	,1497	,819	,2809	,2200	,2324	,157	,2688	,1518	,168	,2767	,2369	,2583	,173] , [ 286	,2076	,243	,939	,399	,451	,231	,2187	,2295	,453	,1206	,2468	,2183	,230	,714	,681], [ 3111	,2857	,2312	,3230	,149	,3082	,408	,1148	,2428	,134	,147	,620	,128	,157	,492	,2879]]
+    [
+      [86, 440, 233, 83, 393, 420, 228, 491, 159, 13, 110, 135, 97, 238, 92, 396],
+      [646, 3952, 3430, 145, 1574, 2722, 3565, 125, 3303, 843, 152, 1095, 3805, 134, 3873, 3024],
+      [2150, 257, 237, 2155, 1115, 150, 502, 255, 1531, 894, 2309, 1982, 2418, 206, 307, 2370],
+      [1224, 343, 1039, 126, 1221, 937, 136, 1185, 1194, 1312, 1217, 929, 124, 1394, 1337, 168],
+      [1695, 2288, 224, 2667, 2483, 3528, 809, 263, 2364, 514, 3457, 3180, 2916, 239, 212, 3017],
+      [827, 3521, 127, 92, 2328, 3315, 1179, 3240, 695, 3144, 3139, 533, 132, 82, 108, 854],
+      [1522, 2136, 1252, 1049, 207, 2821, 2484, 413, 2166, 1779, 162, 2154, 158, 2811, 164, 2632],
+      [95, 579, 1586, 1700, 79, 1745, 1105, 89, 1896, 798, 1511, 1308, 1674, 701, 60, 2066],
+      [1210, 325, 98, 56, 1486, 1668, 64, 1601, 1934, 1384, 69, 1725, 992, 619, 84, 167],
+      [4620, 2358, 2195, 4312, 168, 1606, 4050, 102, 2502, 138, 135, 4175, 1477, 2277, 2226, 1286],
+      [5912, 6261, 3393, 431, 6285, 3636, 4836, 180, 6158, 6270, 209, 3662, 5545, 204, 6131, 230],
+      [170, 2056, 2123, 2220, 2275, 139, 461, 810, 1429, 124, 1470, 2085, 141, 1533, 1831, 518],
+      [193, 281, 2976, 3009, 626, 152, 1750, 1185, 3332, 715, 1861, 186, 1768, 3396, 201, 3225],
+      [492, 1179, 154, 1497, 819, 2809, 2200, 2324, 157, 2688, 1518, 168, 2767, 2369, 2583, 173],
+      [286, 2076, 243, 939, 399, 451, 231, 2187, 2295, 453, 1206, 2468, 2183, 230, 714, 681],
+      [3111, 2857, 2312, 3230, 149, 3082, 408, 1148, 2428, 134, 147, 620, 128, 157, 492, 2879]
+    ]
   end
   def day3() do
     347991
   end
   def day4() do
-   "kvvfl kvvfl olud wjqsqa olud frc
+    "kvvfl kvvfl olud wjqsqa olud frc
     slhm rdfm yxb rsobyt rdfm
     pib wzfr xyoakcu zoapeze rtdxt rikc jyeps wdyo hawr xyoakcu hawr
     ismtq qwoi kzt ktgzoc gnxblp dzfayil ftfx asscba ionxi dzfayil qwoi
