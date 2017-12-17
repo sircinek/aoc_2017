@@ -638,24 +638,6 @@ defmodule Aoc_2017 do
     |> multiply_first_two
   end
 
-#  # -------------------------------------------------------------------
-#  # Internal functions
-#  # -------------------------------------------------------------------
-#  def knot_it([curLen | lengths], elements, curPos, skipSize) do
-#    newElems =
-#      Enum.split(elements, curPos)
-#      |> (fn {a, b} -> Enum.reverse_slice(b ++ a, 0, curLen)  end).()
-#      |> Enum.split(-curPos)
-#      |> (fn {b, a} -> a ++ b end).()
-#    knot_it(lengths, newElems, move_pos(curPos, Enum.count(elements), curLen + skipSize), skipSize + 1)
-#  end
-#  def knot_it([], elements, curPos, curLen) do
-#    {elements, curPos, curLen}
-#  end
-#
-#  defp move_pos(curPos, elemLen, move) when move > elemLen, do: move_pos(curPos, elemLen, rem(move, elemLen))
-#  defp move_pos(curPos, elemLength, move) when (curPos + move) < elemLength, do: curPos + move
-#  defp move_pos(curPos, elemLen, move), do: move - (elemLen - curPos)
 
   def day10b(size, input \\ Inputs.day10) do
     list = String.to_charlist(input) ++ [17,31,73,47,23]
