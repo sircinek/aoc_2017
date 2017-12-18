@@ -1118,4 +1118,116 @@ defmodule Aoc_2017 do
               end
     %{acc| pos: new_index, spin: new_list}
   end
+  def day18a(input \\ Inputs.day18) do
+    input
+    |> String.split("\n")
+    |> run_code(%{cmd_index: 0, freq: 0, play: false})
+  end
+  def day18b(input \\ Inputs.day18) do
+    command_list = input |> String.split("\n")
+    for i <- [0,1], do: Process.spawn(fn -> register_program(i); run_code_split_proc(command_list, initiate_state(i))  end, [])
+  end
+
+  def register_program(id), do: Process.register(self(), "program"<>Integer.to_string(id)|> String.to_atom)
+
+  def initiate_state(id), do: %{"p" => id, id: id, cmd_index: 0, count: 0, exit: false}
+
+  def run_code_split_proc(list, %{cmd_index: i, id: id, count: count} = state) do
+    {cmd, instructions} = Enum.at(list, i) |> dispatch_command
+      new_acc = case cmd do
+        "set" -> set_instruction(state, instructions)
+        "add" -> add_instruction(state, instructions)
+        "mul" -> mul_instruction(state, instructions)
+        "mod" -> mod_instruction(state, instructions)
+        "jgz" -> jump_instruction(state, instructions, list, &run_code_split_proc/2)
+        "snd" -> send_instruction(state, instructions)
+        "rcv" -> read_instruction(state, instructions)
+      end
+      case new_acc do
+       m when is_map(m) ->
+         case m[:exit] do
+           true -> IO.puts("Program #{state[:id]}, send counter #{state[:count]}")
+           false -> run_code_split_proc(list, %{new_acc| cmd_index: i+1})
+         end
+      _ -> :ok
+      end
+    end
+  def send_instruction(%{id: 0, count: c} = a, v) do
+    send(:program1, {:val, get_value(v, a)})
+    %{a|count: c+1}
+  end
+  def send_instruction(%{id: 1, count: c} = a, v) do
+    send(:program0, {:val, get_value(v, a)})
+    %{a|count: c+1}
+  end
+  def read_instruction(acc, register) do
+    receive do
+      {:val, value} -> Map.put(acc, register, value)
+    after
+      100 -> Map.put(acc, :exit, true)
+    end
+  end
+
+  def run_code(_, %{play: true, freq: freq}), do: freq
+  def run_code(list, %{cmd_index: i} = acc) do
+  {cmd, instructions} = Enum.at(list, i) |> dispatch_command
+  new_acc =
+    case cmd do
+      "set" -> set_instruction(acc, instructions)
+      "add" -> add_instruction(acc, instructions)
+      "mul" -> mul_instruction(acc, instructions)
+      "mod" -> mod_instruction(acc, instructions)
+      "jgz" -> jump_instruction(acc, instructions, list, &run_code/2)
+      "snd" -> send_frequency(acc, instructions)
+      "rcv" -> rcv_frequency(acc, instructions)
+    end
+    case new_acc do
+      v when is_integer(v) -> v
+      _ -> run_code(list, %{new_acc| cmd_index: i+1})
+    end
+  end
+  def set_instruction(acc, {register, v}), do: Map.put(acc, register, get_value(v, acc))
+  def add_instruction(acc, {register, v}), do: Map.put(acc, register, Map.get(acc, register, 0) + get_value(v, acc))
+  def mul_instruction(acc, {register, v}), do: Map.put(acc, register, Map.get(acc, register,0) * get_value(v, acc))
+  def mod_instruction(acc, {register, v}), do: Map.put(acc, register, try_modulo(Map.get(acc, register, 0), get_value(v, acc)))
+  def jump_instruction(acc, {v, offset}, list, fun) when is_integer(v) and v > 0, do: fun.(list, %{acc| cmd_index: acc[:cmd_index] + get_value(offset, acc)})
+  def jump_instruction(acc, {key, offset}, list, fun) do
+    case Map.get(acc, key, 0) do
+    v when v > 0 -> fun.(list, %{acc| cmd_index: acc[:cmd_index] + get_value(offset, acc)})
+    _ -> acc
+    end
+  end
+  def send_frequency(acc, freq), do: %{acc| freq: get_value(freq, acc)}
+  def rcv_frequency(acc, v) when is_integer(v) and v > 0, do: Map.put(acc, :play, true)
+  def rcv_frequency(acc, key) do
+    case Map.get(acc, key, 0) do
+      v when v > 0 -> Map.put(acc, :play, true)
+      _ -> acc
+    end
+  end
+  def try_modulo(a, b) do
+    try do
+      rem(a,b)
+    rescue
+      ArithmeticError -> 0
+    end
+  end
+  defp get_value(i, _a) when is_integer(i), do: i
+  defp get_value(i, a), do: Map.get(a, i, 0)
+  def dispatch_command(cmd) do
+    [command | values] = String.split(cmd)
+    v =
+    case values do
+      [first, second] -> {register_or_integer(first), register_or_integer(second)}
+      [single] -> register_or_integer(single)
+    end
+    {command, v}
+  end
+  def register_or_integer(v) do
+    try do
+      String.to_integer(v)
+    rescue
+      ArgumentError -> v
+    end
+  end
 end
