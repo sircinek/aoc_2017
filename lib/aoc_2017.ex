@@ -943,7 +943,6 @@ defmodule Aoc_2017 do
   def day14b(input \\ Inputs.day14) do
     Enum.reduce(127..0, [], fn suffix, acc -> [input<>"-"<>Integer.to_string(suffix)|acc] end)
     |> Enum.map(fn s -> s |> knot_hash end)
-#    |> Enum.map(fn l -> String.graphemes(l) |> Enum.map(&String.to_integer/1) end)
     |> Enum.map(&hex_string_to_binary/1)
     |> Enum.map(&to_row/1)
     |> Enum.map(fn row -> Enum.zip(0..127, row) |> Enum.into(%{}) end)
@@ -1186,10 +1185,11 @@ defmodule Aoc_2017 do
       _ -> run_code(list, %{new_acc| cmd_index: i+1})
     end
   end
-  def set_instruction(acc, {register, v}), do: Map.put(acc, register, get_value(v, acc))
-  def add_instruction(acc, {register, v}), do: Map.put(acc, register, Map.get(acc, register, 0) + get_value(v, acc))
-  def mul_instruction(acc, {register, v}), do: Map.put(acc, register, Map.get(acc, register,0) * get_value(v, acc))
-  def mod_instruction(acc, {register, v}), do: Map.put(acc, register, try_modulo(Map.get(acc, register, 0), get_value(v, acc)))
+
+  def set_instruction(acc, {r, v}), do: Map.put(acc, r, get_value(v, acc))
+  def add_instruction(acc, {r, v}), do: Map.put(acc, r, get_value(r, acc) + get_value(v, acc))
+  def mul_instruction(acc, {r, v}), do: Map.put(acc, r, get_value(r, acc) * get_value(v, acc))
+  def mod_instruction(acc, {r, v}), do: Map.put(acc, r, try_modulo(get_value(r, acc), get_value(v, acc)))
   def jump_instruction(acc, {v, offset}, list, fun) when is_integer(v) and v > 0, do: fun.(list, %{acc| cmd_index: acc[:cmd_index] + get_value(offset, acc)})
   def jump_instruction(acc, {key, offset}, list, fun) do
     case Map.get(acc, key, 0) do
@@ -1229,5 +1229,89 @@ defmodule Aoc_2017 do
     rescue
       ArgumentError -> v
     end
+  end
+  def day19(input \\ Inputs.day19) do
+    map = input
+    |> String.split("\n")
+    |> Enum.map(fn l -> row = l |> String.graphemes; Enum.zip(0..length(row), row) |> Enum.into(%{}) end)
+    |> Enum.reduce(%{i: 0}, fn elem, %{i: i} = acc -> Map.put(acc, i, elem ) |> Map.put(:i, i+1) end)
+    Process.spawn(fn -> collector_fun() end, [])
+    Process.spawn(fn -> crawler_fun(map) end, [])
+  end
+  def crawler_fun(map) do
+    {x, y} = find_starting_point(map)
+    walk_maze(map, x, y, :d)
+  end
+  def walk_maze(map, x, y, :d) do
+    send_tick()
+    case map[y][x] do
+      "|" -> walk_maze(map, x, y+1, :d)
+      "+" -> {new_x, new_d} = change_direction(map, x, y, :d); walk_maze(map, new_x, y, new_d)
+      "-" -> walk_maze(map, x, y+1, :d)
+      " " -> send_eom()
+      letter -> send_letter(letter); walk_maze(map, x, y+1, :d)
+    end
+  end
+  def walk_maze(map, x, y, :r) do
+    send_tick()
+    case map[y][x] do
+      "-" -> walk_maze(map, x+1, y, :r)
+      "|" -> walk_maze(map, x+1, y, :r)
+      "+" ->{new_y, new_d} = change_direction(map, x, y, :r); walk_maze(map, x, new_y, new_d)
+      " " -> send_eom()
+      letter -> send_letter(letter); walk_maze(map, x+1, y, :r)
+     end
+  end
+  def walk_maze(map, x, y, :u) do
+    send_tick()
+    case map[y][x] do
+      "|" -> walk_maze(map, x, y-1, :u)
+      "+" -> {new_x, new_d} = change_direction(map, x, y, :u); walk_maze(map, new_x, y, new_d)
+      "-" -> walk_maze(map, x, y-1, :u)
+      " " -> send_eom()
+      letter -> send_letter(letter); walk_maze(map, x, y-1, :u)
+    end
+  end
+  def walk_maze(map, x, y, :l) do
+    send_tick()
+    case map[y][x] do
+      "|" -> walk_maze(map, x-1, y, :l)
+      "-" -> walk_maze(map, x-1, y, :l)
+      "+" -> {new_y, new_d} = change_direction(map, x, y, :l); walk_maze(map, x, new_y, new_d)
+      " " -> send_eom()
+      letter -> send_letter(letter); walk_maze(map, x-1, y, :l)
+    end
+  end
+  def send_tick, do: send(:collector, :tick)
+  def change_direction(m, x, y, d) when d == :d or d == :u do
+    case get_in(m, [y, x+1]) do
+      " " -> {x-1, :l}
+      nil -> {x-1, :l}
+      _ -> {x+1, :r}
+    end
+  end
+  def change_direction(m, x, y, d) when d == :l or d == :r do
+    case get_in(m, [y+1, x]) do
+      " " -> {y-1, :u}
+      nil -> {y-1, :u}
+      _ -> {y+1, :d}
+    end
+  end
+  def send_eom, do: send(:collector, :end_of_maze)
+  def send_letter(l), do: send(:collector, {:letter, l})
+  def collector_fun() do
+  Process.register(self(), :collector);
+  collect_loop(%{list: [], tick: 0})
+  end
+  def collect_loop(%{list: acc, tick: t} = s) do
+    receive do
+      {:letter, letter} -> IO.puts("Got letter #{letter}"); collect_loop(%{s| list: acc ++ List.wrap(letter)})
+      :tick -> collect_loop(%{s| tick: t+1})
+      :end_of_maze -> IO.puts("Crawler has finished, output #{Enum.join(acc)}, steps: #{t-1}")
+    end
+  end
+  def find_starting_point(map, y \\ 0) do
+    [{x, _}] =  Map.to_list(map[y]) |> Enum.filter(fn {_, s} -> s == "|" end)
+    {x, y}
   end
 end
